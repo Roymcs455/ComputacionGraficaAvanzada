@@ -26,7 +26,7 @@
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/type_ptr.hpp>  
 
 #include "Headers/Texture.h"
 
@@ -81,6 +81,10 @@ Model modelDartLegoRightHand;
 Model modelDartLegoLeftLeg;
 Model modelDartLegoRightLeg;
 
+//Propia cosecha
+Model modelVolcan;
+Model modelCarritoHelados;
+
 GLuint textureCespedID, textureWallID, textureWindowID, textureHighwayID; //, textureLandingPadID;
 GLuint skyboxTextureID;
 
@@ -110,6 +114,8 @@ glm::mat4 modelMatrixHeli = glm::mat4(1.0f);
 glm::mat4 modelMatrixLambo = glm::mat4(1.0);
 glm::mat4 modelMatrixAircraft = glm::mat4(1.0);
 glm::mat4 modelMatrixDart = glm::mat4(1.0f);
+glm::mat4 modelMatrixVolcan = glm::mat4(1.0f);
+glm::mat4 modelMatrixCarritoHelados = glm::mat4(1.0f);
 
 float rotDartHead = 0.0, rotDartLeftArm = 0.0, rotDartLeftHand = 0.0, rotDartRightArm = 0.0, rotDartRightHand = 0.0, rotDartLeftLeg = 0.0, rotDartRightLeg = 0.0;
 int modelSelected = 0;
@@ -134,6 +140,25 @@ int indexFrameDartNext = 1;
 float interpolationDart = 0.0;
 int maxNumPasosDart = 200;
 int numPasosDart = 0;
+
+//Lambo Variables
+struct LamboProps { //las variables y propiedades del lambo, así como su estado
+	int generalState,advanceState, doorState;
+	float maxAdvance;
+	float advanceCounter;
+	float chasisRotation;
+	float doorRotation;
+	float wheelXRotation;
+	float wheelYRotation;
+};
+enum LamboGeneralStates
+{
+	SELECT_LENGTH,
+	ADVANCE,
+	ROTATE,
+	OPEN_DOORS
+};
+
 
 // Var animate helicopter
 float rotHelHelY = 0.0;
@@ -263,6 +288,7 @@ void init(int width, int height, std::string strTitle, bool bFullScreen) {
 	modelLamboRearLeftWheel.setShader(&shaderMulLighting);
 	modelLamboRearRightWheel.loadModel("../models/Lamborginhi_Aventador_OBJ/Lamborghini_Aventador_rear_right_wheel.obj");
 	modelLamboRearRightWheel.setShader(&shaderMulLighting);
+	
 
 	// Dart Lego
 	modelDartLegoBody.loadModel("../models/LegoDart/LeoDart_body.obj");
@@ -283,6 +309,13 @@ void init(int width, int height, std::string strTitle, bool bFullScreen) {
 	modelDartLegoLeftLeg.setShader(&shaderMulLighting);
 	modelDartLegoRightLeg.loadModel("../models/LegoDart/LeoDart_right_leg.obj");
 	modelDartLegoRightLeg.setShader(&shaderMulLighting);
+
+	//Propia cosecha
+	modelCarritoHelados.loadModel("../NotIncluded/CarroHelados/carrito_helado.obj");
+	modelCarritoHelados.setShader(&shaderMulLighting);
+
+	modelVolcan.loadModel("../NotIncluded/Volcan/volcan.obj");
+	modelVolcan.setShader(&shaderMulLighting);
 
 	camera->setPosition(glm::vec3(0.0, 3.0, 4.0));
 
@@ -486,6 +519,10 @@ void destroy() {
 	modelLamboRearRightWheel.destroy();
 	modelLamboRightDor.destroy();
 	modelRock.destroy();
+	modelCarritoHelados.destroy();
+	modelVolcan.destroy();
+	
+
 
 	// Textures Delete
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -664,6 +701,7 @@ void applicationLoop() {
 	float rotWheelsY = 0.0;
 	int numberAdvance = 0;
 	int maxAdvance = 0.0;
+	struct LamboProps Lambo = {0};
 
 	matrixModelRock = glm::translate(matrixModelRock, glm::vec3(-3.0, 0.0, 2.0));
 
@@ -675,6 +713,13 @@ void applicationLoop() {
 
 	modelMatrixDart = glm::translate(modelMatrixDart, glm::vec3(3.0, 0.0, 20.0));
 
+	modelMatrixCarritoHelados = glm::scale(modelMatrixCarritoHelados, glm::vec3(0.050f, 0.050f, 0.050f));
+	modelMatrixCarritoHelados = glm::translate(modelMatrixCarritoHelados, glm::vec3(0, 0, 0));
+	
+	modelMatrixVolcan = glm::translate(modelMatrixVolcan, glm::vec3(10, 0, 25));
+	modelMatrixVolcan = glm::scale(modelMatrixVolcan, glm::vec3(0.050f, 0.050f, 0.050f));
+	
+
 	// Variables to interpolation key frames
 	fileName = "../animaciones/animation_dart_joints.txt";
 	keyFramesDartJoints = getKeyRotFrames(fileName);
@@ -684,7 +729,7 @@ void applicationLoop() {
 
 	while (psi) {
 		currTime = TimeManager::Instance().GetTime();
-		if(currTime - lastTime < 0.016666667){
+		if (currTime - lastTime < 0.016666667) {
 			glfwPollEvents();
 			continue;
 		}
@@ -699,7 +744,7 @@ void applicationLoop() {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		glm::mat4 projection = glm::perspective(glm::radians(45.0f),
-				(float) screenWidth / (float) screenHeight, 0.01f, 100.0f);
+			(float)screenWidth / (float)screenHeight, 0.01f, 100.0f);
 		glm::mat4 view = camera->getViewMatrix();
 
 		// Settea la matriz de vista y projection al shader con solo color
@@ -708,14 +753,14 @@ void applicationLoop() {
 
 		// Settea la matriz de vista y projection al shader con skybox
 		shaderSkybox.setMatrix4("projection", 1, false,
-				glm::value_ptr(projection));
+			glm::value_ptr(projection));
 		shaderSkybox.setMatrix4("view", 1, false,
-				glm::value_ptr(glm::mat4(glm::mat3(view))));
+			glm::value_ptr(glm::mat4(glm::mat3(view))));
 		// Settea la matriz de vista y projection al shader con multiples luces
 		shaderMulLighting.setMatrix4("projection", 1, false,
-					glm::value_ptr(projection));
+			glm::value_ptr(projection));
 		shaderMulLighting.setMatrix4("view", 1, false,
-				glm::value_ptr(view));
+			glm::value_ptr(view));
 
 		/*******************************************
 		 * Propiedades Luz direccional
@@ -831,8 +876,9 @@ void applicationLoop() {
 		/*******************************************
 		 * Custom objects obj
 		 *******************************************/
-		//Rock render
+		 //Rock render
 		modelRock.render(matrixModelRock);
+
 		// Forze to enable the unit texture to 0 always ----------------- IMPORTANT
 		glActiveTexture(GL_TEXTURE0);
 
@@ -845,14 +891,14 @@ void applicationLoop() {
 		modelEclipseChasis.render(modelMatrixEclipseChasis);
 
 		glm::mat4 modelMatrixFrontalWheels = glm::mat4(modelMatrixEclipseChasis);
-		modelMatrixFrontalWheels = glm::translate(modelMatrixFrontalWheels, glm::vec3(0.0, 1.05813, 4.11483 ));
+		modelMatrixFrontalWheels = glm::translate(modelMatrixFrontalWheels, glm::vec3(0.0, 1.05813, 4.11483));
 		modelMatrixFrontalWheels = glm::rotate(modelMatrixFrontalWheels, rotWheelsY, glm::vec3(0, 1, 0));
 		modelMatrixFrontalWheels = glm::rotate(modelMatrixFrontalWheels, rotWheelsX, glm::vec3(1, 0, 0));
 		modelMatrixFrontalWheels = glm::translate(modelMatrixFrontalWheels, glm::vec3(0.0, -1.05813, -4.11483));
 		modelEclipseFrontalWheels.render(modelMatrixFrontalWheels);
 
 		glm::mat4 modelMatrixRearWheels = glm::mat4(modelMatrixEclipseChasis);
-		modelMatrixRearWheels = glm::translate(modelMatrixRearWheels, glm::vec3(0.0, 1.05813, -4.35157 ));
+		modelMatrixRearWheels = glm::translate(modelMatrixRearWheels, glm::vec3(0.0, 1.05813, -4.35157));
 		modelMatrixRearWheels = glm::rotate(modelMatrixRearWheels, rotWheelsX, glm::vec3(1, 0, 0));
 		modelMatrixRearWheels = glm::translate(modelMatrixRearWheels, glm::vec3(0.0, -1.05813, 4.35157));
 		modelEclipseRearWheels.render(modelMatrixRearWheels);
@@ -875,7 +921,7 @@ void applicationLoop() {
 		glActiveTexture(GL_TEXTURE0);
 		glm::mat4 modelMatrixLamboLeftDor = glm::mat4(modelMatrixLamboChasis);
 		modelMatrixLamboLeftDor = glm::translate(modelMatrixLamboLeftDor, glm::vec3(1.08676, 0.707316, 0.982601));
-		modelMatrixLamboLeftDor = glm::rotate(modelMatrixLamboLeftDor, glm::radians(dorRotCount), glm::vec3(1.0, 0, 0));
+		modelMatrixLamboLeftDor = glm::rotate(modelMatrixLamboLeftDor, glm::radians(Lambo.doorRotation), glm::vec3(1.0, 0, 0));
 		modelMatrixLamboLeftDor = glm::translate(modelMatrixLamboLeftDor, glm::vec3(-1.08676, -0.707316, -0.982601));
 		modelLamboLeftDor.render(modelMatrixLamboLeftDor);
 		modelLamboRightDor.render(modelMatrixLamboChasis);
@@ -934,6 +980,102 @@ void applicationLoop() {
 		modelMatrixDartRightLeg = glm::rotate(modelMatrixDartRightLeg, rotDartRightLeg, glm::vec3(0, 0, 1));
 		modelMatrixDartRightLeg = glm::translate(modelMatrixDartRightLeg, glm::vec3(0, -1.12632, 0.423349));
 		modelDartLegoRightLeg.render(modelMatrixDartRightLeg);
+
+		modelMatrixCarritoHelados = glm::translate(modelMatrixCarritoHelados, glm::vec3(0, 0, 0));
+		modelCarritoHelados.render(modelMatrixCarritoHelados);
+
+		modelMatrixVolcan = glm::translate(modelMatrixVolcan, glm::vec3(0, 0, 0));
+		modelVolcan.render(modelMatrixVolcan);
+		//Maquina de estados
+		switch (Lambo.generalState)
+		{
+		case SELECT_LENGTH:
+
+
+			switch (Lambo.advanceState)
+			{
+			case 0:
+				Lambo.maxAdvance = 5.0f;
+				break;
+			case 1:
+				Lambo.maxAdvance = 39.0f;
+				break;
+			case 2:
+				Lambo.maxAdvance = 34.5f;
+				break;
+			case 3:
+				Lambo.maxAdvance = 39.0f;
+				break;
+			case 4:
+				Lambo.maxAdvance = 34.5f;
+				break;
+			}
+			Lambo.generalState = ADVANCE;
+			std::cout << "SELECT_LENGHT, advance state: " << Lambo.advanceState << " Max advance: " << Lambo.maxAdvance << std::endl;
+			std::cout << "advance Counter: " << Lambo.advanceCounter << std::endl;
+			break;
+		case ADVANCE:
+			modelMatrixLambo = glm::translate(modelMatrixLambo, glm::vec3(0.0f, 0.0f, 0.1f));
+			Lambo.advanceCounter += 0.1f;
+			Lambo.wheelXRotation += 0.05f;
+			if (Lambo.advanceCounter >= Lambo.maxAdvance)
+			{
+				Lambo.advanceCounter = 0.0f;
+				Lambo.advanceState++;
+				Lambo.generalState = ROTATE;
+				std::cout << "From ADVANCE to ROTATE, adv " << Lambo.advanceState << std::endl;
+
+			}
+			break;
+		case ROTATE:
+
+			modelMatrixLambo = glm::translate(modelMatrixLambo, glm::vec3(0.0f, 0.0f, 0.025f));
+			modelMatrixLambo = glm::rotate(modelMatrixLambo, glm::radians(-0.5f), glm::vec3(0.0f, 0.025f, 0.0f));
+			Lambo.chasisRotation += 0.5f;
+			Lambo.wheelYRotation += 0.02f;
+			if (Lambo.wheelYRotation > 0.25)
+				Lambo.wheelYRotation = 0.25;
+			if (Lambo.chasisRotation > 90.0f)
+			{
+				Lambo.chasisRotation = 0.0f;
+				if (Lambo.advanceState == 5)
+				{
+					Lambo.generalState = OPEN_DOORS;
+				}
+				else
+				{
+
+					Lambo.generalState = SELECT_LENGTH;
+				}
+			}
+			break;
+		case OPEN_DOORS:
+			std::cout << "OPEN_DOORS" << std::endl;
+			switch (Lambo.doorState)
+			{
+			case 0:
+				std::cout << "DOOR State 0" << std::endl;
+				Lambo.doorRotation += 0.5f;
+				if (Lambo.doorRotation > 75.0f)
+				{
+					Lambo.doorState = 1;
+				}
+				break;
+			case 1:
+				std::cout << "DOOR State 1" << std::endl;
+				Lambo.doorRotation -= 0.5;
+				if (Lambo.doorRotation < 0.0f)
+				{
+					Lambo.doorRotation = 0.0f;
+					Lambo.generalState = SELECT_LENGTH;
+					Lambo.advanceState = 1;
+					Lambo.doorState = 0;
+				}
+				break;
+			}
+		}
+
+
 		// Se regresa el cull faces IMPORTANTE para la capa
 		glEnable(GL_CULL_FACE);
 
