@@ -81,6 +81,28 @@ Model modelDartLegoRightHand;
 Model modelDartLegoLeftLeg;
 Model modelDartLegoRightLeg;
 
+//Buzz Lightyear
+
+Model modelBuzzlightyHead;
+Model modelBuzzlightyHip;
+Model modelBuzzlightyLeftArm;
+Model modelBuzzlightyLefCalf;
+Model modelBuzzlightyLeftFoot;
+Model modelBuzzlightyLeftForearm;
+Model modelBuzzlightyLeftHand;
+Model modelBuzzlightyLeftThigh;
+Model modelBuzzlightyLeftWing1;
+Model modelBuzzlightyLeftWing2;
+Model modelBuzzlightyRightArm;
+Model modelBuzzlightyRightCalf;
+Model modelBuzzlightyRightFoot;
+Model modelBuzzlightyRightForearm;
+Model modelBuzzlightyRightHand;
+Model modelBuzzlightyRightThigh;
+Model modelBuzzlightyRightWing1;
+Model modelBuzzlightyRightWing2;
+Model modelBuzzlightyTorso;
+
 //Propia cosecha
 Model modelVolcan;
 Model modelCarritoHelados;
@@ -151,6 +173,7 @@ struct LamboProps { //las variables y propiedades del lambo, así como su estado
 	float wheelXRotation;
 	float wheelYRotation;
 };
+
 enum LamboGeneralStates
 {
 	SELECT_LENGTH,
@@ -158,8 +181,6 @@ enum LamboGeneralStates
 	ROTATE,
 	OPEN_DOORS
 };
-
-
 // Var animate helicopter
 float rotHelHelY = 0.0;
 
@@ -701,11 +722,15 @@ void applicationLoop() {
 	float rotWheelsY = 0.0;
 	int numberAdvance = 0;
 	int maxAdvance = 0.0;
-	struct LamboProps Lambo = {0};
+	struct LamboProps Lambo = { 0 };
+	int helicopterState = 0;
+	bool goingUpHeli = true;
+	float helicopterHeightCounter = 0.0f;
+	float helicopterRotationCounter = 0.5f;
 
 	matrixModelRock = glm::translate(matrixModelRock, glm::vec3(-3.0, 0.0, 2.0));
 
-	modelMatrixHeli = glm::translate(modelMatrixHeli, glm::vec3(5.0, 10.0, -5.0));
+	modelMatrixHeli = glm::translate(modelMatrixHeli, glm::vec3(5.0, 0.0, -5.0));
 
 	modelMatrixAircraft = glm::translate(modelMatrixAircraft, glm::vec3(10.0, 2.0, -17.5));
 
@@ -1075,6 +1100,50 @@ void applicationLoop() {
 			}
 		}
 
+		//Maquina de estados Helicopter
+
+		switch (helicopterState)
+		{
+		case 0: //Subiendo
+			modelMatrixHeli = glm::translate(modelMatrixHeli, glm::vec3(0.0f, 0.1f, 0.0f));
+			helicopterHeightCounter += 0.1f;
+			if (helicopterHeightCounter >= 20.0f)
+			{
+				helicopterHeightCounter = 0.0f;
+				helicopterState = 1;
+
+			}
+			break;
+		case 1: //Bajando
+			modelMatrixHeli = glm::translate(modelMatrixHeli, glm::vec3(0.0f, -0.1f, 0.0f));
+			helicopterHeightCounter += 0.1f;
+			if (helicopterHeightCounter >= 20.0f)
+			{
+				helicopterHeightCounter = 0.0f;
+				helicopterState = 3;
+			}
+			break;
+		case 2: //Acelerando
+			helicopterRotationCounter += 0.001f;
+			if (helicopterRotationCounter >= 0.5f)
+			{
+				helicopterRotationCounter = 0.5f;
+				helicopterState = 0;
+			}
+			break;
+		case 3: //Desacelerando
+			helicopterRotationCounter -= 0.001f;
+			if (helicopterRotationCounter <= 0.0f)
+			{
+				helicopterRotationCounter = 0.0f;
+				helicopterState = 2;
+			}
+			break;
+		default:
+			break;
+		}
+
+
 
 		// Se regresa el cull faces IMPORTANTE para la capa
 		glEnable(GL_CULL_FACE);
@@ -1096,7 +1165,7 @@ void applicationLoop() {
 		glDepthFunc(oldDepthFuncMode);
 
 		// Constantes de animaciones
-		rotHelHelY += 0.5;
+		rotHelHelY += helicopterRotationCounter;
 
 		glfwSwapBuffers(window);
 	}
