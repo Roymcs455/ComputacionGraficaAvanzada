@@ -717,7 +717,7 @@ bool processInput(bool continueApplication) {
 	}
 	else if (modelSelected == 3 && glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
 	{
-		modelMatrixHombreConTraje = glm::translate(modelMatrixHombreConTraje, glm::vec3(-0.0f, 0.0f, 0.02f));
+		modelMatrixHombreConTraje = glm::translate(modelMatrixHombreConTraje, glm::vec3(0.0f, 0.0f, -0.02f));
 		hombreConTrajeModelAnimate.setAnimationIndex(2);
 	}
 	else
