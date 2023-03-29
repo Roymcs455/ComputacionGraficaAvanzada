@@ -83,6 +83,7 @@ Model modelDartLegoRightLeg;
 // Model animate instance
 // Mayow
 Model mayowModelAnimate;
+Model hombreConTrajeModelAnimate;
 
 GLuint textureCespedID, textureWallID, textureWindowID, textureHighwayID, textureLandingPadID;
 GLuint skyboxTextureID;
@@ -114,6 +115,7 @@ glm::mat4 modelMatrixLambo = glm::mat4(1.0);
 glm::mat4 modelMatrixAircraft = glm::mat4(1.0);
 glm::mat4 modelMatrixDart = glm::mat4(1.0f);
 glm::mat4 modelMatrixMayow = glm::mat4(1.0f);
+glm::mat4 modelMatrixHombreConTraje = glm::mat4(1.0f);
 
 float rotDartHead = 0.0, rotDartLeftArm = 0.0, rotDartLeftHand = 0.0, rotDartRightArm = 0.0, rotDartRightHand = 0.0, rotDartLeftLeg = 0.0, rotDartRightLeg = 0.0;
 int modelSelected = 0;
@@ -291,6 +293,14 @@ void init(int width, int height, std::string strTitle, bool bFullScreen) {
 	//Mayow
 	mayowModelAnimate.loadModel("../models/mayow/personaje2.fbx");
 	mayowModelAnimate.setShader(&shaderMulLighting);
+
+	//HombreConTraje
+	hombreConTrajeModelAnimate.loadModel("../models/hombreConTraje/HombreConTraje.fbx");
+
+	hombreConTrajeModelAnimate.setShader(&shaderMulLighting);
+	hombreConTrajeModelAnimate.setAnimationIndex(0);
+	
+
 
 	camera->setPosition(glm::vec3(0.0, 3.0, 4.0));
 
@@ -529,6 +539,7 @@ void destroy() {
 
 	// Custom objects animate
 	mayowModelAnimate.destroy();
+	hombreConTrajeModelAnimate.destroy();
 
 	// Textures Delete
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -606,7 +617,7 @@ bool processInput(bool continueApplication) {
 	if (enableCountSelected && glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS){
 		enableCountSelected = false;
 		modelSelected++;
-		if(modelSelected > 2)
+		if(modelSelected > 3)
 			modelSelected = 0;
 		if(modelSelected == 1)
 			fileName = "../animaciones/animation_dart_joints.txt";
@@ -691,6 +702,28 @@ bool processInput(bool continueApplication) {
 		modelMatrixDart = glm::translate(modelMatrixDart, glm::vec3(-0.02, 0.0, 0.0));
 	else if (modelSelected == 2 && glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
 		modelMatrixDart = glm::translate(modelMatrixDart, glm::vec3(0.02, 0.0, 0.0));
+	
+	
+	if (modelSelected == 3 && glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+		modelMatrixHombreConTraje = glm::rotate(modelMatrixHombreConTraje, 0.02f, glm::vec3(0, 1, 0));
+	else if (modelSelected == 3 && glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+		modelMatrixHombreConTraje = glm::rotate(modelMatrixHombreConTraje, -0.02f, glm::vec3(0, 1, 0));
+		
+	
+	if (modelSelected == 3 && glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+	{
+		modelMatrixHombreConTraje = glm::translate(modelMatrixHombreConTraje, glm::vec3(0.0f, 0.0f, 0.02f));
+		hombreConTrajeModelAnimate.setAnimationIndex(2);
+	}
+	else if (modelSelected == 3 && glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+	{
+		modelMatrixHombreConTraje = glm::translate(modelMatrixHombreConTraje, glm::vec3(-0.0f, 0.0f, 0.02f));
+		hombreConTrajeModelAnimate.setAnimationIndex(2);
+	}
+	else
+		hombreConTrajeModelAnimate.setAnimationIndex(0);
+
+
 
 	glfwPollEvents();
 	return continueApplication;
@@ -721,6 +754,11 @@ void applicationLoop() {
 
 	modelMatrixMayow = glm::translate(modelMatrixMayow, glm::vec3(13.0f, 0.05f, -5.0f));
 	modelMatrixMayow = glm::rotate(modelMatrixMayow, glm::radians(-90.0f), glm::vec3(0, 1, 0));
+	
+	modelMatrixHombreConTraje = glm::translate(modelMatrixHombreConTraje, glm::vec3(13.0f, 0.05f, -10.0f));
+	//modelMatrixHombreConTraje = glm::scale(modelMatrixHombreConTraje, glm::vec3(0.01f));
+	
+
 
 	// Variables to interpolation key frames
 	fileName = "../animaciones/animation_dart_joints.txt";
@@ -738,6 +776,9 @@ void applicationLoop() {
 		lastTime = currTime;
 		TimeManager::Instance().CalculateFrameRate(true);
 		deltaTime = TimeManager::Instance().DeltaTime;
+		
+
+
 		psi = processInput(true);
 
 		// Variables donde se guardan las matrices de cada articulacion por 1 frame
@@ -998,6 +1039,13 @@ void applicationLoop() {
 		modelMatrixMayowBody = glm::scale(modelMatrixMayowBody, glm::vec3(0.021, 0.021, 0.021));
 		mayowModelAnimate.setAnimationIndex(0);
 		mayowModelAnimate.render(modelMatrixMayowBody);
+		
+
+		glm::mat4 modelMatrixHombreConTrajeEscalado = glm::mat4(modelMatrixHombreConTraje);
+		modelMatrixHombreConTrajeEscalado = glm::scale(modelMatrixHombreConTrajeEscalado, glm::vec3(0.01f));
+		//hombreConTrajeModelAnimate.setAnimationIndex(0);
+		hombreConTrajeModelAnimate.render(modelMatrixHombreConTrajeEscalado);
+		
 
 		/*******************************************
 		 * Skybox
