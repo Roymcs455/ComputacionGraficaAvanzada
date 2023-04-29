@@ -19,4 +19,3 @@ void main(){
 	our_normal = mat3(transpose(inverse(model))) * in_normal;
 	our_uv = in_uv;
 }
-
