@@ -66,6 +66,7 @@
     <None Include="..\Shaders\iluminacion_textura_animation_fog.vs" />
     <None Include="..\Shaders\iluminacion_textura_animation_shadow.vs" />
     <None Include="..\Shaders\iluminacion_texture_res.vs" />
+    <None Include="..\Shaders\iluminacion_texture_res_blendmap.vs" />
     <None Include="..\Shaders\multipleLights.fs" />
     <None Include="..\Shaders\multipleLights_fog.fs" />
     <None Include="..\Shaders\multipleLights_shadow.fs" />
