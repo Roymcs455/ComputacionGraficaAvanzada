@@ -56,6 +56,7 @@ Shader shaderTerrain;
 
 /*shared_ptr es para no tener que manejar la memoria (hacer los free de los pointers)*/
 std::shared_ptr<Camera> camera(new ThirdPersonCamera());
+std::shared_ptr<FirstPersonCamera> cameraFP(new FirstPersonCamera());
 
 Sphere skyboxSphere(20, 20);
 
@@ -88,6 +89,10 @@ Model modelLampPost2;
 // Model animate instance
 // Mayow
 Model mayowModelAnimate;
+// Chaneque
+Model hombreConTrajeModelAnimate;
+
+
 // Terrain model instance
 Terrain terrain(-1, -1, 200, 8, "../Textures/heightmap.png");
 
@@ -110,7 +115,7 @@ std::string fileNames[6] = { "../Textures/mp_bloodvalley/blood-valley_ft.tga",
 		"../Textures/mp_bloodvalley/blood-valley_rt.tga",
 		"../Textures/mp_bloodvalley/blood-valley_lf.tga" };
 
-bool exitApp = false;
+bool exitApp = false, isThirdCamera=true,changingCamera=false;
 int lastMousePosX, offsetX = 0;
 int lastMousePosY, offsetY = 0;
 
@@ -121,6 +126,7 @@ glm::mat4 modelMatrixLambo = glm::mat4(1.0);
 glm::mat4 modelMatrixAircraft = glm::mat4(1.0);
 glm::mat4 modelMatrixDart = glm::mat4(1.0f);
 glm::mat4 modelMatrixMayow = glm::mat4(1.0f);
+glm::mat4 modelMatrixHombreConTraje = glm::mat4(1.0f);
 
 float rotDartHead = 0.0, rotDartLeftArm = 0.0, rotDartLeftHand = 0.0, rotDartRightArm = 0.0, rotDartRightHand = 0.0, rotDartLeftLeg = 0.0, rotDartRightLeg = 0.0;
 int modelSelected = 2;
@@ -303,6 +309,9 @@ void init(int width, int height, std::string strTitle, bool bFullScreen) {
 	//Mayow
 	mayowModelAnimate.loadModel("../models/mayow/personaje2.fbx");
 	mayowModelAnimate.setShader(&shaderMulLighting);
+
+	hombreConTrajeModelAnimate.loadModel("../models/hombreConTraje/HombreConTraje.fbx");
+	hombreConTrajeModelAnimate.setShader(&shaderMulLighting);
 
 	//camera->setPosition(glm::vec3(0.0, 0.0, 10.0));
 	camera->setSensitivity(1.0f);
@@ -702,6 +711,7 @@ void destroy() {
 
 	// Custom objects animate
 	mayowModelAnimate.destroy();
+	hombreConTrajeModelAnimate.destroy();
 
 	// Textures Delete
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -771,8 +781,44 @@ bool processInput(bool continueApplication) {
 	if (exitApp || glfwWindowShouldClose(window) != 0) {
 		return false;
 	}
-	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
-		camera->mouseMoveCamera(offsetX, offsetY, deltaTime);
+	if (isThirdCamera)
+	{
+		if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+			camera->mouseMoveCamera(offsetX, offsetY, deltaTime);
+	}
+	else
+	{
+		
+		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+			cameraFP->moveFrontCamera(true, deltaTime);
+		if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+			cameraFP->moveFrontCamera(false, deltaTime);
+		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+			cameraFP->moveRightCamera(false, deltaTime);
+		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+			cameraFP->moveRightCamera(true, deltaTime);
+		if(glfwGetMouseButton(window,GLFW_MOUSE_BUTTON_LEFT)== GLFW_PRESS)
+			cameraFP->mouseMoveCamera(offsetX, offsetY, deltaTime);
+		
+	}
+
+	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL)==GLFW_PRESS )
+	{
+		if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS)
+		{
+			changingCamera = true;
+		}
+		if (glfwGetKey(window, GLFW_KEY_K) == GLFW_RELEASE)
+		{
+			if (changingCamera)
+			{
+				isThirdCamera = !isThirdCamera;
+				std::cout << "Changed Camera" << std::endl;
+			}
+			changingCamera = false;
+		}
+		
+	}
 	//if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
 	//	camera->mouseMoveCamera(0, offsetY, deltaTime);
 	offsetX = 0;
@@ -782,7 +828,7 @@ bool processInput(bool continueApplication) {
 	if (enableCountSelected && glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS){
 		enableCountSelected = false;
 		modelSelected++;
-		if(modelSelected > 2)
+		if(modelSelected > 3)
 			modelSelected = 0;
 		if(modelSelected == 1)
 			fileName = "../animaciones/animation_dart_joints.txt";
@@ -879,6 +925,24 @@ bool processInput(bool continueApplication) {
 		modelMatrixMayow = glm::translate(modelMatrixMayow, glm::vec3(0, 0, -0.02));
 	}
 
+
+	// HombreCon Traje animate model movements
+	if (modelSelected == 3 && glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
+		modelMatrixHombreConTraje = glm::rotate(modelMatrixHombreConTraje, glm::radians(1.0f), glm::vec3(0, 1, 0));
+	}
+	else if (modelSelected == 3 && glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+		modelMatrixHombreConTraje = glm::rotate(modelMatrixHombreConTraje, glm::radians(-1.0f), glm::vec3(0, 1, 0));
+	}if (modelSelected == 3 && glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+		modelMatrixHombreConTraje = glm::translate(modelMatrixHombreConTraje, glm::vec3(0, 0, 0.02));
+		hombreConTrajeModelAnimate.setAnimationIndex(2);
+	}
+	else if (modelSelected == 3 && glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+		modelMatrixHombreConTraje = glm::translate(modelMatrixHombreConTraje, glm::vec3(0, 0, -0.02));
+		hombreConTrajeModelAnimate.setAnimationIndex(2);
+	}
+
+	
+
 	glfwPollEvents();
 	return continueApplication;
 }
@@ -903,6 +967,11 @@ void applicationLoop() {
 
 	modelMatrixMayow = glm::translate(modelMatrixMayow, glm::vec3(13.0f, 0.05f, -5.0f));
 	modelMatrixMayow = glm::rotate(modelMatrixMayow, glm::radians(-90.0f), glm::vec3(0, 1, 0));
+
+	modelMatrixHombreConTraje = glm::translate(modelMatrixHombreConTraje, glm::vec3(3.0f, 0.05f, -5.0f));
+	modelMatrixHombreConTraje = glm::rotate(modelMatrixHombreConTraje, glm::radians(-90.0f), glm::vec3(0, 1, 0));
+
+	hombreConTrajeModelAnimate.setAnimationIndex(1);
 
 	// Variables to interpolation key frames
 	fileName = "../animaciones/animation_dart_joints.txt";
@@ -936,6 +1005,12 @@ void applicationLoop() {
 			angleTarget = glm::angle(glm::quat_cast(modelMatrixDart));
 			target = modelMatrixDart[3];
 		}
+		else if (modelSelected == 3)
+		{
+			axisTarget = glm::axis(glm::quat_cast(modelMatrixHombreConTraje));
+			angleTarget = glm::angle(glm::quat_cast(modelMatrixHombreConTraje));
+			target = glm::vec3(modelMatrixHombreConTraje[3]) + glm::vec3(0.0f,1.0f,0.0f);
+		}
 		else
 		{
 			axisTarget = glm::axis(glm::quat_cast(modelMatrixMayow));
@@ -949,10 +1024,19 @@ void applicationLoop() {
 			angleTarget = -angleTarget;
 		if (modelSelected == 1)
 			angleTarget -=glm::radians(90.0f);
-		camera->setAngleTarget(angleTarget);
-		camera->setCameraTarget(target);
-		camera->updateCamera();
-		view = camera->getViewMatrix();
+
+		//configurando el viewMatrix:
+		if (isThirdCamera)
+		{
+			camera->setAngleTarget(angleTarget);
+			camera->setCameraTarget(target);
+			camera->updateCamera();
+			view = camera->getViewMatrix();
+		}
+		else
+		{
+			view = cameraFP->getViewMatrix();
+		}
 
 		// Settea la matriz de vista y projection al shader con solo color
 		shader.setMatrix4("projection", 1, false, glm::value_ptr(projection));
@@ -1022,7 +1106,6 @@ void applicationLoop() {
 		/*******************************************
 		 * Propiedades PointLights
 		 *******************************************/
-		/*
 		shaderMulLighting.setInt("pointLightCount", lamp1Position.size() + lamp2Orientation.size());
 		shaderTerrain.setInt("pointLightCount", lamp1Position.size() + lamp2Orientation.size());
 		for (int i = 0; i < lamp1Position.size(); i++){
@@ -1061,7 +1144,6 @@ void applicationLoop() {
 			shaderTerrain.setFloat("pointLights[" + std::to_string(lamp1Position.size() + i) + "].linear", 0.09);
 			shaderTerrain.setFloat("pointLights[" + std::to_string(lamp1Position.size() + i) + "].quadratic", 0.02);
 		}
-		*/
 		/*******************************************
 		 * Terrain Cesped
 		 *******************************************/
@@ -1216,6 +1298,11 @@ void applicationLoop() {
 		glm::mat4 modelMatrixMayowBody = glm::mat4(modelMatrixMayow);
 		modelMatrixMayowBody = glm::scale(modelMatrixMayowBody, glm::vec3(0.021, 0.021, 0.021));
 		mayowModelAnimate.render(modelMatrixMayowBody);
+
+		modelMatrixHombreConTraje[3][1] = terrain.getHeightTerrain(modelMatrixHombreConTraje[3][0], modelMatrixHombreConTraje[3][2]);
+		glm::mat4 modelMatrixHCTBody = glm::mat4(modelMatrixHombreConTraje);
+		modelMatrixHCTBody = glm::scale(modelMatrixHCTBody, glm::vec3(0.01));
+		hombreConTrajeModelAnimate.render(modelMatrixHCTBody);
 
 		/*******************************************
 		 * Skybox
