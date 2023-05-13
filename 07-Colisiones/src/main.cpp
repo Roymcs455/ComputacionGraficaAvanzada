@@ -1360,6 +1360,23 @@ void applicationLoop() {
 		aircraftCollider.e = modelAircraft.getObb().e * glm::vec3(1.0, 1.0, 1.0);
 		addOrUpdateColliders(collidersOBB, "aircraft", aircraftCollider, modelMatrixAircraft);
 
+
+		//Collider del Lambo
+		glm::mat4 modelMatrixColliderLambo = glm::mat4(modelMatrixLambo);
+		modelMatrixColliderLambo[3][1] = terrain.getHeightTerrain(modelMatrixColliderLambo[3][0], modelMatrixColliderLambo[3][2]);
+		AbstractModel::OBB lamboCollider;
+		// Set the orientation of collider before doing the scale
+		lamboCollider.u = glm::quat_cast(modelMatrixLambo);
+		modelMatrixColliderLambo = glm::scale(modelMatrixColliderLambo,
+			glm::vec3(1.3f));
+		modelMatrixColliderLambo = glm::translate(
+			modelMatrixColliderLambo, modelLambo.getObb().c);
+		lamboCollider.c = glm::vec3(modelMatrixColliderLambo[3]);
+		lamboCollider.e = modelLambo.getObb().e * glm::vec3(1.3);
+		addOrUpdateColliders(collidersOBB, "lambo", lamboCollider, modelMatrixLambo);
+
+
+
 		// Lamps1 colliders
 		for (int i = 0; i < lamp1Position.size(); i++){
 			AbstractModel::OBB lampCollider;
@@ -1375,6 +1392,42 @@ void applicationLoop() {
 			lampCollider.e = modelLamp1.getObb().e * glm::vec3(0.5, 0.5, 0.5);
 			addOrUpdateColliders(collidersOBB, "lamp1-" + std::to_string(i), lampCollider, modelMatrixColliderLamp);
 		}
+		AbstractModel::SBB modelColliderRock;
+		glm::mat4 modelMatrixRockCollider = glm::mat4(matrixModelRock);
+		modelMatrixRockCollider = glm::scale(modelMatrixRockCollider,glm::vec3(1.0f));
+		modelMatrixRockCollider = glm::translate(modelMatrixRockCollider,modelRock.getSbb().c);
+		modelColliderRock.c = modelMatrixRockCollider[3];
+		modelColliderRock.ratio = modelRock.getSbb().ratio * 1.0;
+		addOrUpdateColliders(collidersSBB, "rock", modelColliderRock, matrixModelRock);
+
+		//Lamp2 Colliders
+
+		for (int i = 0; i < lamp2Position.size(); i++)
+		{
+			AbstractModel::OBB modelColliderPost;
+			glm::mat4 modelColliderLampPost = glm::mat4(1.0f);
+			modelColliderLampPost = glm::translate(modelColliderLampPost, lamp2Position[i]);
+			modelColliderLampPost = glm::rotate(modelColliderLampPost, 
+									glm::radians(lamp2Orientation[i]), 
+									glm::vec3(0.0f, 1.0f, 0.0f));
+			modelColliderPost.u = glm::quat_cast(modelColliderLampPost);
+			modelColliderLampPost = glm::scale(modelColliderLampPost, glm::vec3(1.0f));
+			modelColliderLampPost = glm::translate(modelColliderLampPost, modelLampPost2.getObb().c);
+			modelColliderPost.c = modelColliderLampPost[3];
+			modelColliderPost.e = modelLampPost2.getObb().e * glm::vec3(1.0f);
+			addOrUpdateColliders(collidersOBB, "lamp2-" + std::to_string(i),modelColliderPost,modelColliderLampPost);
+		}
+
+		//mayow Collider
+		AbstractModel::OBB modelMayowCollider;
+		glm::mat4 mayowMatrixCollider = glm::mat4(modelMatrixMayow);
+		mayowMatrixCollider = glm::rotate(mayowMatrixCollider, glm::radians(-90.0f),glm::vec3(1.0f,0.0f,0.0f));
+		modelMayowCollider.u = glm::quat_cast( mayowMatrixCollider );
+		mayowMatrixCollider = glm::scale(mayowMatrixCollider, glm::vec3(0.021));
+		mayowMatrixCollider = glm::translate(mayowMatrixCollider, mayowModelAnimate.getObb().c);
+		modelMayowCollider.c = mayowMatrixCollider[3];
+		modelMayowCollider.e = mayowModelAnimate.getObb().e * glm::vec3(0.021)*glm::vec3(0.75);
+		addOrUpdateColliders(collidersOBB, "mayow", modelMayowCollider, modelMatrixMayow);
 
 		/*******************************************
 		 * Render de colliders
@@ -1398,6 +1451,66 @@ void applicationLoop() {
 			sphereCollider.setColor(glm::vec4(1.0, 1.0, 1.0, 1.0));
 			sphereCollider.enableWireMode();
 			sphereCollider.render(matrixCollider);
+		}
+
+		for (
+			std::map<
+				std::string,
+				std::tuple<AbstractModel::SBB,glm::mat4,glm::mat4>
+			>::iterator it = collidersSBB.begin(); it != collidersSBB.end(); it++)
+		{
+			bool isCollision = false;
+			for (
+				std::map<
+					std::string,
+					std::tuple<AbstractModel::SBB,glm::mat4,glm::mat4>
+				>::iterator jt = collidersSBB.begin(); jt != collidersSBB.end(); jt++)
+			{
+				if (it != jt && testSphereSphereIntersection(std::get<0>(it->second),std::get<0>(jt->second)) )
+				{
+					std::cout << "Hay collision entre "<< it->first << " y el modelo " << jt->first << std::endl;
+					isCollision = true;
+				}
+			}
+			addOrUpdateCollisionDetection(collisionDetection, it->first, isCollision);
+		}
+
+		for (
+			std::map<
+			std::string,
+			std::tuple<AbstractModel::OBB, glm::mat4, glm::mat4>
+			>::iterator it = collidersOBB.begin(); it != collidersOBB.end(); it++)
+		{
+			bool isCollision = false;
+			for (
+				std::map<
+				std::string,
+				std::tuple<AbstractModel::OBB, glm::mat4, glm::mat4>
+				>::iterator jt = collidersOBB.begin(); jt != collidersOBB.end(); jt++)
+			{
+				if (it != jt && testOBBOBB(std::get<0>(it->second), std::get<0>(jt->second)))
+				{
+					std::cout << "Hay collision entre " << it->first << " y el modelo " << jt->first << std::endl;
+					isCollision = true;
+				}
+			}
+			addOrUpdateCollisionDetection(collisionDetection, it->first, isCollision);
+		}
+		for (
+			std::map<
+			std::string,
+			std::tuple<AbstractModel::SBB, glm::mat4, glm::mat4>
+			>::iterator it = collidersSBB.begin(); it != collidersSBB.end(); it++)
+		{
+			bool isCollision = false;
+			for (
+				std::map<
+				std::string,
+				std::tuple<AbstractModel::SBB, glm::mat4, glm::mat4>
+				>::iterator it = collidersSBB.begin(); it != collidersSBB.end(); it++)
+			{
+
+			}
 		}
 
 		// Esto es para ilustrar la transformacion inversa de los coliders
