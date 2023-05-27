@@ -125,6 +125,12 @@ double startTimeJump = 0.0;
 double tmv = 0.0;
 float gravity = 1.3;
 
+bool generarRayo = false;
+glm::vec3 origenRayoPicking;
+glm::vec3 destinoRayoPicking;
+glm::vec3 directorioRayoPicking;
+
+
 // Model matrix definitions
 glm::mat4 matrixModelRock = glm::mat4(1.0);
 glm::mat4 modelMatrixHeli = glm::mat4(1.0f);
@@ -980,7 +986,15 @@ bool processInput(bool continueApplication) {
 	if (!generarRayo && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
 	{
 		generarRayo = true;
-		glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)screenWidth, (float)screenHeight);
+		glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)screenWidth / (float)screenHeight, 0.01f, 100.0f);
+		glm::vec4 viewport = glm::vec4(0.0, 0.0, screenWidth, screenHeight);
+		origenRayoPicking = glm::unProject(glm::vec3(lastMousePosX,screenHeight-lastMousePosY, 0.0f), camera->getViewMatrix(),projection, viewport);
+		destinoRayoPicking = glm::unProject(glm::vec3(lastMousePosX,screenHeight-lastMousePosY, 1.0f), camera->getViewMatrix(),projection, viewport);
+		directorioRayoPicking = glm::normalize(destinoRayoPicking - origenRayoPicking);
+	}
+	else if (generarRayo && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE)
+	{
+		generarRayo = false;
 	}
 
 	glfwPollEvents();
@@ -1593,6 +1607,8 @@ void applicationLoop() {
 
 			if (raySphereIntersect(ori, targetRay, rayDirection, std::get<0>(itSBB->second), tRint))
 				std::cout << "Collision del rayo con el modelo " << itSBB->first << std::endl;
+			if (generarRayo && raySphereIntersect(origenRayoPicking, destinoRayoPicking, directorioRayoPicking, std::get<0>(itSBB->second), tRint))
+				std::cout << "Seleccionando el modelo " << itSBB->first << std::endl;
 		}
 		std::map<std::string, std::tuple<AbstractModel::OBB, glm::mat4, glm::mat4>>::iterator itOBB;
 
@@ -1600,6 +1616,10 @@ void applicationLoop() {
 		{
 			if (testRayOBB(ori, targetRay, std::get<0>(itOBB->second))) {
 				std::cout << "collision del rayo con el modelo " << itOBB->first << std::endl;
+			}
+			if (generarRayo && testRayOBB(origenRayoPicking, destinoRayoPicking, std::get<0>(itOBB->second)))
+			{
+				std::cout << "Seleccionando el modelo " << itOBB->first << std::endl;
 			}
 		}
 		// Esto es para ilustrar la transformacion inversa de los coliders
